@@ -28,7 +28,7 @@ def formam_par(a, b):
 
 
 def criar_tabuleiro(pares=TOTAL_PARES):
-    """Sorteia 12 valores; cada um vira duas cartas da mesma cor."""
+    """Sorteia 12 valores, cada um vira duas cartas da mesma cor."""
     cartas = []
     for valor in random.sample(range(1, 14), pares):
         naipes = random.choice(["HD", "SC"])   # as duas vermelhas ou as duas pretas
