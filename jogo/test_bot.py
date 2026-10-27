@@ -58,3 +58,4 @@ class BotTest(TestCase):
 
         self.assertEqual(posicoes_livres(estado), [])
         self.assertEqual(estado["placar"]["bot"], 12)
+        
