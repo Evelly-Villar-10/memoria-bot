@@ -66,3 +66,49 @@ h2 { margin-top: 0; font-size: 1.15rem; }
 .rolagem { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--suave); }
+
+[hidden] { display: none !important; }
+
+.placar {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.placar strong { font-size: 1.3rem; }
+
+.mensagem {
+  min-height: 1.5em;
+  margin: 8px 0 12px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.tabuleiro {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+.carta {
+  aspect-ratio: 2 / 3;
+  padding: 0;
+  border: 2px solid #1e3a8a;
+  border-radius: 8px;
+  background: repeating-linear-gradient(45deg, #1d4ed8, #1d4ed8 6px, #1e40af 6px, #1e40af 12px);
+  color: transparent;
+  font-size: clamp(0.9rem, 3.5vw, 1.6rem);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.carta.virada {
+  background: #fff;
+  border-color: #9ca3af;
+  color: #111827;
+  cursor: default;
+}
+.carta.vermelha { color: #dc2626; }
+
+.carta.par-jogador { background: #dbeafe; border-color: #2563eb; }
+.carta.par-bot { background: #ffedd5; border-color: #ea580c; }

@@ -1,71 +1,95 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Jogo da Memória</title>
-  <link rel="stylesheet" href="{% static 'jogo/estilo.css' %}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Jogo da Memória</title>
+    <link rel="stylesheet" href="{% static 'jogo/estilo.css' %}">
 </head>
+
 <body>
-  <main>
-    <h1>Jogo da Memória 🃏</h1>
-    <p class="subtitulo">Encontre os pares (mesmo valor e mesma cor) antes do bot!</p>
+    <main>
+        <h1>Jogo da Memória 🃏</h1>
+        <p class="subtitulo">Encontre os pares (mesmo valor e mesma cor) antes do bot!</p>
 
-    <section id="menu">
-      <h2>Nova partida</h2>
-      <p>Escolha a dificuldade do bot:</p>
-      <div class="botoes">
-        <button class="botao" data-dificuldade="facil">Fácil</button>
-        <button class="botao" data-dificuldade="medio">Médio</button>
-        <button class="botao" data-dificuldade="dificil">Difícil</button>
-      </div>
-    </section>
+        <div id="painel-lobby"></div>
+        <section id="menu">
+            <h2>Nova partida</h2>
+            <p>Escolha a dificuldade do bot:</p>
+            <div class="botoes">
+                <button class="botao" data-dificuldade="facil">Fácil</button>
+                <button class="botao" data-dificuldade="medio">Médio</button>
+                <button class="botao" data-dificuldade="dificil">Difícil</button>
+            </div>
+        </section>
 
-    <section>
-      <h2>Suas estatísticas</h2>
-      <div class="estatisticas">
-        <div><strong>{{ estatisticas.total }}</strong><span>Partidas</span></div>
-        <div><strong>{{ estatisticas.vitorias }}</strong><span>Vitórias</span></div>
-        <div><strong>{{ estatisticas.derrotas }}</strong><span>Derrotas</span></div>
-        <div><strong>{{ estatisticas.empates }}</strong><span>Empates</span></div>
-        <div><strong>{{ estatisticas.melhor|default_if_none:"—" }}</strong><span>Melhor jogo (jogadas)</span></div>
-      </div>
-    </section>
+        <section>
+            <h2>Suas estatísticas</h2>
+            <div class="estatisticas">
+                <div><strong>{{ estatisticas.total }}</strong><span>Partidas</span></div>
+                <div><strong>{{ estatisticas.vitorias }}</strong><span>Vitórias</span></div>
+                <div><strong>{{ estatisticas.derrotas }}</strong><span>Derrotas</span></div>
+                <div><strong>{{ estatisticas.empates }}</strong><span>Empates</span></div>
+                <div><strong>{{ estatisticas.melhor|default_if_none:"—" }}</strong><span>Melhor jogo (jogadas)</span>
+                </div>
+            </div>
+        </section>
 
-    <section>
-      <h2>Últimas partidas</h2>
-      {% if historico %}
-        <div class="rolagem">
-          <table>
-            <thead>
-              <tr><th>Data</th><th>Dificuldade</th><th>Resultado</th><th>Placar</th><th>Jogadas</th></tr>
-            </thead>
-            <tbody>
-              {% for p in historico %}
-                <tr>
-                  <td>{{ p.criada_em|date:"d/m H:i" }}</td>
-                  <td>
-                    {% if p.dificuldade == "facil" %}Fácil
-                    {% elif p.dificuldade == "medio" %}Médio
-                    {% else %}Difícil{% endif %}
-                  </td>
-                  <td>
-                    {% if p.resultado == "vitoria" %}Vitória
-                    {% elif p.resultado == "derrota" %}Derrota
-                    {% else %}Empate{% endif %}
-                  </td>
-                  <td>{{ p.pares_jogador }} x {{ p.pares_bot }}</td>
-                  <td>{{ p.jogadas }}</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+        <section>
+            <h2>Últimas partidas</h2>
+            {% if historico %}
+            <div class="rolagem">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Dificuldade</th>
+                            <th>Resultado</th>
+                            <th>Placar</th>
+                            <th>Jogadas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in historico %}
+                        <tr>
+                            <td>{{ p.criada_em|date:"d/m H:i" }}</td>
+                            <td>
+                                {% if p.dificuldade == "facil" %}Fácil
+                                {% elif p.dificuldade == "medio" %}Médio
+                                {% else %}Difícil{% endif %}
+                            </td>
+                            <td>
+                                {% if p.resultado == "vitoria" %}Vitória
+                                {% elif p.resultado == "derrota" %}Derrota
+                                {% else %}Empate{% endif %}
+                            </td>
+                            <td>{{ p.pares_jogador }} x {{ p.pares_bot }}</td>
+                            <td>{{ p.jogadas }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>Você ainda não terminou nenhuma partida.</p>
+            {% endif %}
+        </section>
         </div>
-      {% else %}
-        <p>Você ainda não terminou nenhuma partida.</p>
-      {% endif %}
-    </section>
-  </main>
+
+        <section id="jogo" hidden>
+            <div class="placar">
+                <div>Você: <strong id="placar-jogador">0</strong></div>
+                <div>Bot: <strong id="placar-bot">0</strong></div>
+                <div>Jogadas: <strong id="jogadas">0</strong></div>
+            </div>
+            <p id="mensagem" class="mensagem"></p>
+            <div id="tabuleiro" class="tabuleiro"></div>
+            <button id="botao-fim" class="botao" hidden>Jogar de novo</button>
+        </section>
+    </main>
+    <script src="{% static 'jogo/jogo.js' %}"></script>
 </body>
+
 </html>
