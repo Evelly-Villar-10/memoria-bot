@@ -1,74 +1,149 @@
+
 import random
 
 from .regras import Carta, formam_par, posicoes_livres, resolver_par
 
-# Chance de o bot esquecer cada carta que viu no começo da vez dele
-ESQUECIMENTO = {"facil": 0.60, "medio": 0.35, "dificil": 0.10}
+
+# Chance de esquecer cada carta entre as jogadas do bot.
+# Quanto maior o valor, mais fácil fica para o jogador.
+ESQUECIMENTO = {
+    "facil": 0.70,
+    "medio": 0.35,
+    "dificil": 0.10,
+}
 
 
-def _virar(estado, pos, eventos):
-    """Vira uma carta: o bot memoriza e registra o evento"""
-    codigo = estado["cartas"][pos]
-    estado["memoria_bot"][str(pos)] = codigo
-    eventos.append({"tipo": "virar", "pos": pos, "carta": codigo, "quem": "bot"})
-    return Carta.de_codigo(codigo)
-
-
-def _par_conhecido(memoria):
-    """Procura entre as cartas que o bot lembra duas que formam par"""
-    itens = [(int(pos), Carta.de_codigo(cod)) for pos, cod in memoria.items()]
-    for i, (pos1, carta1) in enumerate(itens):
-        for pos2, carta2 in itens[i + 1:]:
-            if formam_par(carta1, carta2):
-                return pos1, pos2
-    return None
-
-
-def turno_bot(estado, dificuldade, esquecimento=None):
-    """Joga a vez do bot até ele errar ou as cartas acabarem
-    Devolve a lista de eventos do que aconteceu"""
-    taxa = ESQUECIMENTO[dificuldade] if esquecimento is None else esquecimento
-    eventos = []
-    memoria = estado["memoria_bot"]
-
-    # 1. esquece algumas cartas
+def _esquecer(memoria, taxa):
+    """Esquece aleatoriamente algumas cartas conhecidas."""
     for pos in list(memoria):
         if random.random() < taxa:
             del memoria[pos]
 
+
+def _virar(estado, pos, eventos):
+    """Vira uma carta e registra o que o bot viu."""
+    codigo = estado["cartas"][pos]
+
+    estado["memoria_bot"][str(pos)] = codigo
+
+    eventos.append({
+        "tipo": "virar",
+        "pos": pos,
+        "carta": codigo,
+        "quem": "bot",
+    })
+
+    return Carta.de_codigo(codigo)
+
+
+def _par_conhecido(memoria, livres):
+    """Procura um par lembrado entre as cartas ainda disponíveis."""
+    cartas_conhecidas = [
+        (int(pos), Carta.de_codigo(codigo))
+        for pos, codigo in memoria.items()
+        if int(pos) in livres
+    ]
+
+    for i, (pos1, carta1) in enumerate(cartas_conhecidas):
+        for pos2, carta2 in cartas_conhecidas[i + 1:]:
+            if formam_par(carta1, carta2):
+                return pos1, pos2
+
+    return None
+
+
+def turno_bot(estado, dificuldade, esquecimento=None):
+    """
+    O bot joga até errar ou acabarem as cartas.
+    Esquece informações entre as tentativas de formar pares.
+    """
+    taxa = (
+        ESQUECIMENTO[dificuldade]
+        if esquecimento is None
+        else esquecimento
+    )
+
+    taxa = max(0.0, min(1.0, taxa))
+
+    eventos = []
+    memoria = estado["memoria_bot"]
+
     while posicoes_livres(estado):
-        conhecido = _par_conhecido(memoria)
+        livres = set(posicoes_livres(estado))
+
+        # Remove da memória as cartas que já formaram pares.
+        for pos in list(memoria):
+            if int(pos) not in livres:
+                del memoria[pos]
+
+        # O esquecimento acontece antes de cada nova tentativa.
+        _esquecer(memoria, taxa)
+
+        livres = set(posicoes_livres(estado))
+
+        # Primeiro, tenta encontrar um par que ainda lembra.
+        conhecido = _par_conhecido(memoria, livres)
 
         if conhecido:
-            # 2. joga o par que ele lembra
             a, b = conhecido
             carta_a = _virar(estado, a, eventos)
             carta_b = _virar(estado, b, eventos)
+
         else:
-            # 3. vira uma carta que nunca viu
-            livres = posicoes_livres(estado)
-            desconhecidas = [p for p in livres if str(p) not in memoria]
-            a = random.choice(desconhecidas)
+            # Escolhe uma carta livre que ainda não conhece,
+            # se houver alguma.
+            desconhecidas = [
+                pos for pos in livres
+                if str(pos) not in memoria
+            ]
+
+            a = random.choice(
+                desconhecidas if desconhecidas
+                else list(livres)
+            )
+
             carta_a = _virar(estado, a, eventos)
 
-            # procura a parceira entre as cartas que lembra
+            # Verifica se conhece a parceira da primeira carta.
             b = None
-            for pos, cod in memoria.items():
-                if int(pos) != a and formam_par(carta_a, Carta.de_codigo(cod)):
-                    b = int(pos)
+
+            for pos, codigo in memoria.items():
+                pos = int(pos)
+
+                if (
+                    pos != a
+                    and pos in livres
+                    and formam_par(
+                        carta_a,
+                        Carta.de_codigo(codigo)
+                    )
+                ):
+                    b = pos
                     break
 
-            # 4. senão, vira outra carta desconhecida
+            # Se não conhece a parceira, escolhe outra carta livre.
             if b is None:
-                restantes = [p for p in desconhecidas if p != a]
-                b = random.choice(restantes or [p for p in livres if p != a])
+                restantes = list(livres - {a})
+                b = random.choice(restantes)
+
             carta_b = _virar(estado, b, eventos)
 
         if formam_par(carta_a, carta_b):
             resolver_par(estado, a, b, "bot")
-            eventos.append({"tipo": "par", "pos": [a, b], "dono": "bot"})
+
+            eventos.append({
+                "tipo": "par",
+                "pos": [a, b],
+                "dono": "bot",
+            })
+
+            # A próxima tentativa terá uma nova chance de esquecer.
+            # O bot não perde automaticamente os pares que já acertou.
         else:
-            eventos.append({"tipo": "erro", "pos": [a, b]})
+            eventos.append({
+                "tipo": "erro",
+                "pos": [a, b],
+            })
             break
 
     return eventos
